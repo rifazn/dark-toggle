@@ -1,0 +1,25 @@
+[Desktop Entry]
+
+# The type as listed above
+Type=Application
+
+# The version of the desktop entry specification to which this file complies
+Version=1.0
+
+# The name of the application
+Name=Dark Toggle
+
+# A comment which can/will be used as a tooltip
+Comment=A shell script to toggle between light and dark variants of a GTK theme.
+
+# The executable of the application, possibly with arguments.
+Exec=dark-toggle
+
+# The name of the icon that will be used to display this entry
+Icon=display-brightness-symbolic
+
+# Describes the categories in which this entry should be shown
+Categories=Utility;GNOME;GTK;
+
+# Facilitates in searching for the application
+Keywords=theme;dark;light;night;day;mode;gtk;
