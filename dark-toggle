@@ -1,0 +1,72 @@
+#!/bin/sh
+
+# A small POSIX compliant script to toggle between dark and light variant
+# of a theme for GNOME based desktops.
+
+# Copyright (C) 2021 Rifaz Nahiyan
+# This code is licensed under the MIT License.
+# View the license in its entirety at: https://opensource.org/licenses/MIT
+
+get_current_theme () {
+    gsettings get org.gnome.desktop.interface gtk-theme | tr --delete \'
+}
+
+set_theme () {
+    gsettings set org.gnome.desktop.interface gtk-theme "$1"
+    # Unfortunately, gsettings always reports exit status 0
+}
+
+## Sanity checks
+deps_check () {
+	deps="gsettings notify-send"
+	missing=""
+	for dep in ${deps}; do
+		command -v "${dep}" >/dev/null || missing="${missing} ${dep}"
+	done
+	if [ -n "${missing}" ]
+	then
+		die "Missing necessary dependencies: ${missing}"
+	fi
+	unset missing
+}
+
+# Display a formatted message, then exit with error
+die () {
+	printf "%s: %s\n" "${0##*/}" "${*}" >&2
+	exit 1
+}
+
+# Get the script's basename and trim the '.sh' (if any) at the end
+SCRIPTNAME="${0##*/}"
+SCRIPTNAME="${SCRIPTNAME%.sh}"
+
+main () {
+    # Check if necessary and optional dependecies are there, else exit
+    deps_check
+
+    current_theme="$(get_current_theme)"
+
+    # Check if the theme name has "dark" or "Dark" at the end of its name,
+    # then set new theme accordingly
+    case $current_theme in
+        *-[dD]ark)
+            new_theme="${current_theme%-[Dd]ark}"
+            ;;
+        *)
+            # Extra check for Arc theme as it breaks convention by using captial 'D'
+            if [ "$current_theme" = "Arc" ]; then
+                new_theme="$current_theme"-Dark
+            else
+                new_theme="$current_theme"-dark
+            fi
+            DARK="dark"
+            ;;
+    esac
+
+    set_theme "$new_theme"
+    notify_msg="Theme switched to ${DARK:-light} variant."
+    notify-send -t 5000 "${SCRIPTNAME}" "$notify_msg"
+}
+
+main "${@}"
+
