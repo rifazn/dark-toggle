@@ -30,6 +30,12 @@ deps_check () {
 	unset missing
 }
 
+theme_check () {
+    local user_theme="$HOME/.themes/$1"
+    local system_theme="/usr/share/themes/$1"
+    [ -f "$user_theme/gtk-3.0/gtk.css" ] || [ -f "$system_theme/gtk-3.0/gtk.css" ]
+}
+
 # Display a formatted message, then exit with error
 die () {
 	printf "%s: %s\n" "${0##*/}" "${*}" >&2
@@ -63,6 +69,7 @@ main () {
             ;;
     esac
 
+    theme_check "$new_theme" || die "The theme is not installed: ${new_theme}"
     set_theme "$new_theme"
     notify_msg="Theme switched to ${DARK:-light} variant."
     notify-send -t 5000 "${SCRIPTNAME}" "$notify_msg"
