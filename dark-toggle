@@ -55,17 +55,23 @@ main () {
     # Check if the theme name has "dark" or "Dark" at the end of its name,
     # then set new theme accordingly
     case $current_theme in
+        Zorin*-Light)
+            new_theme="${current_theme//-Light/-Dark}"
+            DARK=dark
+            ;;
+        Zorin*-Dark)
+            new_theme="${current_theme//-Dark/-Light}"
+            ;;
+        Arc)
+            new_theme="$current_theme"-Dark
+            DARK=dark
+            ;;
         *-[dD]ark)
             new_theme="${current_theme%-[Dd]ark}"
             ;;
         *)
-            # Extra check for Arc theme as it breaks convention by using captial 'D'
-            if [ "$current_theme" = "Arc" ]; then
-                new_theme="$current_theme"-Dark
-            else
-                new_theme="$current_theme"-dark
-            fi
-            DARK="dark"
+            new_theme="$current_theme"-dark
+            DARK=dark
             ;;
     esac
 
