@@ -53,24 +53,35 @@ main () {
     current_theme="$(get_current_theme)"
 
     # Check if the theme name has "dark" or "Dark" at the end of its name,
-    # then set new theme accordingly
+    # then try the following in order:
+    # 1. Try removing the -[Dd]ark part
+    # 2. Replace -[Dd]ark with -Light
+    # 3. Replace -[Dd]ark with -light
+    # Try the same logic for themes having [Ll]ight in the end of their name.
     case $current_theme in
-        Zorin*-Light)
-            new_theme="${current_theme//-Light/-Dark}"
-            DARK=dark
-            ;;
-        Zorin*-Dark)
-            new_theme="${current_theme//-Dark/-Light}"
-            ;;
-        Arc)
-            new_theme="$current_theme"-Dark
-            DARK=dark
-            ;;
         *-[dD]ark)
             new_theme="${current_theme%-[Dd]ark}"
+
+            if ! theme_check "$new_theme"
+            then
+                new_theme="${new_theme}-Light"
+            fi
+
+            if ! theme_check "$new_theme"
+            then
+                new_theme="${new_theme}-light"
+            fi
             ;;
+
+        *-[lL]ight)
+            new_theme="${current_theme//-[lL]ight/-Dark}"
+            theme_check "$new_theme" || new_theme="${new_theme//-Dark/-dark}"
+            DARK=dark
+            ;;
+
         *)
             new_theme="$current_theme"-dark
+            theme_check "$new_theme" || new_theme="$current_theme"-Dark
             DARK=dark
             ;;
     esac
