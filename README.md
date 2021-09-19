@@ -19,16 +19,19 @@ Clone the repo and then copy `dark-toggle` to a directory that is in your `$PATH
 
 	cp dark-toggle ~/.local/share/bin/
 	
-Additionally, a `desktop` entry is provided for use with app launchers. In that case, after copying the `dark-toggle` script, additionally copy the `dark-toggle.desktop` file under `~/.local/share/applications` (for current user) or `/usr/share/applications` (for making it available for system-wide).
+Additionally, a `desktop` entry is provided for use with app launchers. In that case, after copying the `dark-toggle` script, additionally copy the `dark-toggle.desktop` file under `~/.local/share/applications` (for current user) or `/usr/share/applications` (for making it available system-wide).
 
 ## Usage
 
-Just call `dark-toggle` or use an app launcher to search and run `Dark Toggle`. See screenshot above.
+Just run `dark-toggle` or use an app launcher to search and run `Dark Toggle`. See screenshot above.
 
-## Note
+The script _just works_ for themes whose names use the simple `-light` and `-dark` suffixes. The following themes are examples of such theme names and are guartanteed to work:
 
-Your current theme must have a dark variant of the theme for this script to work. Since, `gesttings` always exits with an exit code of `0`, there is no way to know whether an actual valid theme change did happen. A fallback to `Adwaita-dark` is planned to be added in the future. 
-
+	Arc ↔ Arc-Dark
+	Adwaita ↔ Adwaita-dark
+	Zorin*-Light ↔ Zorin*-Dark
+	
+For themes with more varied names (like `Qogir-win`) a better technique than just hardcoding my script for all known theme names is being considered.
 
 ## Credits
 
