@@ -2,7 +2,11 @@
 
 A small POSIX compliant shell script that uses `gsettings` to toggle between the dark and light variants of a GTK theme.
 
-<p><img src="https://i.ibb.co/ng2s9kd/test.gif" alt="A gif showing dark-toggle" class="center"></p>
+<p class="center"><img src="https://i.ibb.co/ng2s9kd/test.gif" alt="A gif showing dark-toggle"></p>
+
+For making Firefox change it's theme along with websites that support 'prefers-color-scheme', change Firefox's theme to 'System Default'. Also, to make website that don't use the 'prefers-color-scheme', use a blessing of an add-on [Dark Reader](https://addons.mozilla.org/en-US/firefox/addon/darkreader/).
+
+**Disclosure:** For those who are running a Desktop Environment and would like to toggle theme modes automatically at day/night cycles, consider taking a look at using the [Night Theme Switcher](https://extensions.gnome.org/extension/2236/night-theme-switcher/) Gnome Shell Extension as it offers a more integrated approach as fits a DE like GNOME. This script is rather aimed more towards users of Window Managers (or those that prefer a more DIY approach). Subjectively, it's quite satisfying to be able to toggle a theme _at will_ by calling it from dmenu (and such). However, this script can be used for automatically toggling theme modes at certain times (or day/night cycles) by using the scipt in a `cronjob` or as a hook for `gammastep` or `redshift` (see `contribs/`).
 
 ## Dependencies
 
