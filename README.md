@@ -2,11 +2,11 @@
 
 A small POSIX compliant shell script that uses `gsettings` to toggle between the dark and light variants of a GTK theme.
 
-<p class="center"><img src="https://i.ibb.co/ng2s9kd/test.gif" alt="A gif showing dark-toggle"></p>
+<p align="center"><img src="https://i.ibb.co/ng2s9kd/test.gif" alt="A gif showing dark-toggle"></p>
 
-For making Firefox change it's theme along with websites that support 'prefers-color-scheme', change Firefox's theme to 'System Default'. Also, to make website that don't use the 'prefers-color-scheme', use a blessing of an add-on [Dark Reader](https://addons.mozilla.org/en-US/firefox/addon/darkreader/).
+This is a simple script that _just_ toggles your gtk theme. Adding features like automating at day/night cycles is not intended. However, it _can_ be used to automate theme toggling by using it as a `cronjob` or as a hook for tools like `gammastep`, or `redshift`. Check out the `contribs` directory for some examples. This simplicity, hopefully, will be more appreciated to those who use a Window Manager (as opposed to running a full DE). But DE users are of course, welcomed, nonetheless. As an extra note, Gnome Shell users can consider looking into the extension [Night Theme Switcher](https://extensions.gnome.org/extension/2236/night-theme-switcher/) which supports automated toggling out of the box.
 
-**Disclosure:** For those who are running a Desktop Environment and would like to toggle theme modes automatically at day/night cycles, consider taking a look at using the [Night Theme Switcher](https://extensions.gnome.org/extension/2236/night-theme-switcher/) Gnome Shell Extension as it offers a more integrated approach as fits a DE like GNOME. This script is rather aimed more towards users of Window Managers (or those that prefer a more DIY approach). Subjectively, it's quite satisfying to be able to toggle a theme _at will_ by calling it from dmenu (and such). However, this script can be used for automatically toggling theme modes at certain times (or day/night cycles) by using the scipt in a `cronjob` or as a hook for `gammastep` or `redshift` (see `contribs/`).
+The preview image is using the excellent [Dark Reader]() add-on for Firefox to make websites that don't implement _"prefers-color-scheme"_ to change their modes. Make sure to have Firefox's theme set to _"System Default"_.
 
 ## Dependencies
 
