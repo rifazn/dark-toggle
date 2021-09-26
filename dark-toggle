@@ -143,7 +143,27 @@ custom_theme_mapping_exists () {
 }
 
 ## Config parsing
+get_theme_from_config () {
+    local conf_file="$1"
+    local new_theme=
 
+    while read line; do
+        line="${line//[ \"]/}" # Make it POSIX compatible
+
+        case $line in
+            theme_mappings=*)
+                line="${line//theme_mappings=/}"
+                IFS=,
+                for pair in $line; do
+                    read left right <<< "${pair//:/$IFS}"
+                    [ "$left" = "$current_theme" ] && new_theme="$right"
+                    [ "$right" = "$current_theme" ] && new_theme="$left"
+                done
+        esac
+    done < "$conf_file"
+
+    printf "%s\n" "$new_theme"
+}
 
 main () {
     # Check if necessary and optional dependecies are there, else exit
