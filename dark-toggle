@@ -7,6 +7,15 @@
 # This code is licensed under the MIT License.
 # View the license in its entirety at: https://opensource.org/licenses/MIT
 
+# Get the script's basename and trim the '.sh' (if any) at the end
+SCRIPTNAME="${0##*/}"
+SCRIPTNAME="${SCRIPTNAME%.sh}"
+USER_CONFIG="$HOME/.config/dark-toggle/config"
+SYS_CONFIG="/etc/dark-toggle/config"
+
+variant_found=
+warnings=
+
 get_current_theme () {
     gsettings get org.gnome.desktop.interface gtk-theme | tr --delete \'
 }
@@ -14,6 +23,19 @@ get_current_theme () {
 set_theme () {
     gsettings set org.gnome.desktop.interface gtk-theme "$1"
     # Unfortunately, gsettings always reports exit status 0
+}
+
+# Display a formatted message, then exit with error
+die () {
+	printf "%s: %s\n" "${0##*/}" "${*}" >&2
+	exit 1
+}
+
+print_warnings () {
+    IFS=:
+    printf "%s: errors while parsing the config file.\n" "${SCIPTNAME}" >&2
+    printf "  - %s\n" $* >&2
+    unset IFS
 }
 
 ## Sanity checks
@@ -36,21 +58,57 @@ theme_check () {
     [ -f "$user_theme/gtk-3.0/gtk.css" ] || [ -f "$system_theme/gtk-3.0/gtk.css" ]
 }
 
-# Display a formatted message, then exit with error
-die () {
-	printf "%s: %s\n" "${0##*/}" "${*}" >&2
-	exit 1
+# Config file checks
+config_exists () {
+    local conf="$1"
+    [ -f "$conf" ]
 }
 
-# Get the script's basename and trim the '.sh' (if any) at the end
-SCRIPTNAME="${0##*/}"
-SCRIPTNAME="${SCRIPTNAME%.sh}"
+config_valid () {
+    # Checks whether all lines in config are sytactically valid
+    local conf="$1"
+    local conf_errors=
+
+    while read line; do
+        # Remove white space from line before processing
+        line="${line//[[:space:]]/}"
+
+        case "$line" in
+            theme_mappings=*)
+                # Trim 'key=' part from $line
+                line="${line#*=}"
+
+                # Now the line should be surrounded by double quotes 
+                quotes="${line:0:1}${line: -1}"
+                [ "$quotes" != '""' ] && conf_errors="${conf_errors}Missing/mismatched quotes in config.:"
+
+                # Check if a theme has a corresponding alternative theme specified
+                { strstr "$line" '*:[,"]' || strstr "$line" '[",]:*'; } && conf_errors="${conf_errors}One or more theme pairs is missing a corresponding value.:"
+                ;;
+
+            fallback_dark_theme=*|fallback_light_theme=*)
+                continue ;;
+
+            *=*)
+                local invalid_key="${line%=*}"
+                conf_errors="${conf_errors}Invalid key ($invalid_key) assignment.:"
+                ;;
+
+            \#*|"") continue ;;
+
+            *) conf_errors="${conf_errors}Invalid indentifier exists. Only key assignments (key=...) and comments (#) are supported.:" ;;
+        esac
+    done < "$conf"
+
+    [ -n "$conf_errors" ] && { print_warnings "$conf_errors"; return 1; }
+}
 
 main () {
     # Check if necessary and optional dependecies are there, else exit
     deps_check
-
     current_theme="$(get_current_theme)"
+
+    # new_theme="config"
 
     # Check if the theme name has "dark" or "Dark" at the end of its name,
     # then try the following in order:
@@ -58,7 +116,7 @@ main () {
     # 2. Replace -[Dd]ark with -Light
     # 3. Replace -[Dd]ark with -light
     # Try the same logic for themes having [Ll]ight in the end of their name.
-    case $current_theme in
+    [ -z "$new_theme" ] && case $current_theme in
         *-[dD]ark)
             new_theme="${current_theme%-[Dd]ark}"
 
