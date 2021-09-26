@@ -25,6 +25,13 @@ set_theme () {
     # Unfortunately, gsettings always reports exit status 0
 }
 
+strstr () {
+    # Check if $2 is strstr of $1
+    # https://www.shellscript.sh/tips/strstr/
+    [ "${1#*$2*}" = "$1" ] && return 1
+    return 0
+}
+
 # Display a formatted message, then exit with error
 die () {
 	printf "%s: %s\n" "${0##*/}" "${*}" >&2
@@ -58,7 +65,7 @@ theme_check () {
     [ -f "$user_theme/gtk-3.0/gtk.css" ] || [ -f "$system_theme/gtk-3.0/gtk.css" ]
 }
 
-# Config file checks
+# Config file sanity checks
 config_exists () {
     local conf="$1"
     [ -f "$conf" ]
@@ -82,7 +89,7 @@ config_valid () {
                 quotes="${line:0:1}${line: -1}"
                 [ "$quotes" != '""' ] && conf_errors="${conf_errors}Missing/mismatched quotes in config.:"
 
-                # Check if a theme has a corresponding alternative theme specified
+                # Check if every theme has a corresponding alternative theme specified
                 { strstr "$line" '*:[,"]' || strstr "$line" '[",]:*'; } && conf_errors="${conf_errors}One or more theme pairs is missing a corresponding value.:"
                 ;;
 
@@ -101,7 +108,42 @@ config_valid () {
     done < "$conf"
 
     [ -n "$conf_errors" ] && { print_warnings "$conf_errors"; return 1; }
+
+    return 0
 }
+
+config_parsable () {
+    # Shortcut function for checking whether config file exists and is valid
+    local conf_file="$1"
+    if [ -f "$conf_file" ] && config_valid "$conf_file"; then
+        return 0
+    fi
+
+    return 1
+}
+
+custom_theme_mapping_exists () {
+    # Check whether a mapping in config file exists for theme_name
+    local conf_file="$1"
+    local theme_name="$2"
+    local mapping_exists=1 # Initialized as false
+
+    while read line; do
+        line="${line// /}"
+
+        case $line in
+            theme_mappings=*)
+                { strstr "$line" "$theme_name:" || strstr "$line" ":$theme_name"; } \
+                    && mapping_exists=0
+                ;;
+        esac
+    done < "$conf_file"
+
+    return $mapping_exists
+}
+
+## Config parsing
+
 
 main () {
     # Check if necessary and optional dependecies are there, else exit
