@@ -78,7 +78,7 @@ config_valid () {
 
     while read line; do
         # Remove white space from line before processing
-        line="${line//[[:space:]]/}"
+        line="$(printf "$line" | tr --delete '[[:space:]]')"
 
         case "$line" in
             theme_mappings=*)
@@ -129,7 +129,7 @@ custom_theme_mapping_exists () {
     local mapping_exists=1 # Initialized as false
 
     while read line; do
-        line="${line// /}"
+        line="$(printf "$line" | tr --delete '[[:space:]]')"
 
         case $line in
             theme_mappings=*)
@@ -148,17 +148,21 @@ get_theme_from_config () {
     local new_theme=
 
     while read line; do
-        line="${line//[ \"]/}" # Make it POSIX compatible
+        # line="${line//[ \"]/}"
+        line="$(printf "$line" | tr --d '[[:space:]]' | tr -d '""')"
 
         case $line in
             theme_mappings=*)
-                line="${line//theme_mappings=/}"
+                line="${line#theme_mappings=}"
                 IFS=,
                 for pair in $line; do
-                    read left right <<< "${pair//:/$IFS}"
+                    IFS=: read left right <<< "$pair"
                     [ "$left" = "$current_theme" ] && new_theme="$right"
                     [ "$right" = "$current_theme" ] && new_theme="$left"
                 done
+                unset IFS
+
+				;;
         esac
     done < "$conf_file"
 
@@ -179,7 +183,7 @@ main () {
     # 3. Replace -[Dd]ark with -light
     # Try the same logic for themes having [Ll]ight in the end of their name.
     [ -z "$new_theme" ] && case $current_theme in
-        *-[dD]ark)
+        *[dD]ark)
             new_theme="${current_theme%-[Dd]ark}"
 
             if ! theme_check "$new_theme"
@@ -193,9 +197,10 @@ main () {
             fi
             ;;
 
-        *-[lL]ight)
-            new_theme="${current_theme//-[lL]ight/-Dark}"
-            theme_check "$new_theme" || new_theme="${new_theme//-Dark/-dark}"
+        *[lL]ight)
+            # new_theme="${current_theme//[lL]ight/Dark}"
+            new_theme="${current_theme%[lL]ight}Dark"
+            theme_check "$new_theme" || new_theme="${new_theme%Dark}dark"
             DARK=dark
             ;;
 
