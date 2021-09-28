@@ -157,8 +157,8 @@ get_theme_from_config () {
                 IFS=,
                 for pair in $line; do
                     IFS=: read left right <<< "$pair"
-                    [ "$left" = "$current_theme" ] && new_theme="$right"
-                    [ "$right" = "$current_theme" ] && new_theme="$left"
+                    [ "$left" = "$current_theme" ] && new_theme="$right" && variant_found=dark
+                    [ "$right" = "$current_theme" ] && new_theme="$left" && variant_found=light
                 done
                 unset IFS
 
@@ -174,7 +174,31 @@ main () {
     deps_check
     current_theme="$(get_current_theme)"
 
-    # new_theme="config"
+    # Try to find the alternate variant of current theme from user config
+    if config_parsable "$USER_CONFIG" \
+        && custom_theme_mapping_exists "$USER_CONFIG" "$current_theme"; then
+
+        new_theme="$(get_theme_from_config "$USER_CONFIG")"
+        variant_found="${variant_found} (custom)"
+
+        if ! theme_check "$new_theme"; then
+            variant_found=
+            warnings="$warnings""The user-defined alternate variant"\
+                "of this theme is not installed.:"
+        fi
+    fi
+
+    # If no valid user config available, try default system config
+    if [ -z "$variant_found" ] && config_parsable "$SYS_CONFIG" \
+        && custom_theme_mapping_exists "$SYS_CONFIG" "$current_theme"; then
+            new_theme="$(get_theme_from_config "$SYS_CONFIG")"
+        
+        if ! theme_check "$new_theme"; then
+            variant_found=
+            warnings="${warnings}""The alternate variant of this theme"\
+                " is not installed on your system.:"
+        fi
+    fi
 
     # Check if the theme name has "dark" or "Dark" at the end of its name,
     # then try the following in order:
@@ -182,7 +206,7 @@ main () {
     # 2. Replace -[Dd]ark with -Light
     # 3. Replace -[Dd]ark with -light
     # Try the same logic for themes having [Ll]ight in the end of their name.
-    [ -z "$new_theme" ] && case $current_theme in
+    [ -z "$variant_found" ] && case $current_theme in
         *[dD]ark)
             new_theme="${current_theme%-[Dd]ark}"
 
@@ -210,6 +234,8 @@ main () {
             DARK=dark
             ;;
     esac
+
+    [ ! -z "$warnings" ] && print_warnings "$warnings"
 
     theme_check "$new_theme" || die "The theme is not installed: ${new_theme}"
     set_theme "$new_theme"
