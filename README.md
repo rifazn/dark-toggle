@@ -4,7 +4,7 @@ A small POSIX compliant shell script that uses `gsettings` to toggle between the
 
 <p align="center"><img src="https://i.ibb.co/ng2s9kd/test.gif" alt="A gif showing dark-toggle"></p>
 
-This is a simple script that _just_ toggles your gtk theme. Adding features like automating at day/night cycles is not intended. However, it _can_ be used to automate theme toggling by using it as a `cronjob` or as a hook for tools like `gammastep`, or `redshift`. Check out the `contribs` directory for some examples. This simplicity, hopefully, will be more appreciated to those who use a Window Manager (as opposed to running a full DE). But DE users are of course, welcomed, nonetheless. As an extra note, Gnome Shell users can consider looking into the extension [Night Theme Switcher](https://extensions.gnome.org/extension/2236/night-theme-switcher/) which supports automated toggling out of the box.
+This is a simple script that _just_ toggles your gtk theme. Adding features like automating at day/night cycles is not intended. However, it _can_ be used to automate theme toggling by using it as a `cronjob` or as a hook for tools like `gammastep`, or `redshift`. Check out the `contribs` directory (currently non-existant) for some examples. This simplicity, hopefully, will be more appreciated to those who use a Window Manager (as opposed to running a full DE). But DE users are of course, welcomed, nonetheless. As an extra note, Gnome Shell users can consider looking into the extension [Night Theme Switcher](https://extensions.gnome.org/extension/2236/night-theme-switcher/) which supports automatic day/night toggling out of the box.
 
 The preview image is using the excellent [Dark Reader]() add-on for Firefox to make websites that don't implement _"prefers-color-scheme"_ to change their modes. Make sure to have Firefox's theme set to _"System Default"_.
 
@@ -31,7 +31,7 @@ The script _just works_ for themes whose names use the simple `-light` and `-dar
 	Adwaita ↔ Adwaita-dark
 	Zorin*-Light ↔ Zorin*-Dark
 	
-For themes with more varied names (like `Qogir-win`) a better technique than just hardcoding my script for all known theme names is being considered.
+For themes with more varied names (like `Qogir-win`, `Plata-Noir`, etc.), a config file can be used to add user-defined mapping between light/dark variant of themes. A default config file having some theme mappings is provided in the repo, but of course, it is not completely exhaustive. Why not add in an exotic `theme_mapping` and send a PR!
 
 ## Credits
 
