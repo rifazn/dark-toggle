@@ -1,6 +1,6 @@
 # dark-toggle
 
-A small POSIX compliant shell script that uses `gsettings` to toggle between the dark and light variants of a GTK theme.
+A POSIX compliant shell script that uses `gsettings` to toggle between the dark and light variants of a GTK theme.
 
 <p align="center"><img src="https://i.ibb.co/ng2s9kd/test.gif" alt="A gif showing dark-toggle"></p>
 
@@ -19,19 +19,37 @@ Clone the repo and then copy `dark-toggle` to a directory that is in your `$PATH
 
 	cp dark-toggle ~/.local/share/bin/
 	
-Additionally, a `desktop` entry is provided for use with app launchers. In that case, after copying the `dark-toggle` script, additionally copy the `dark-toggle.desktop` file under `~/.local/share/applications` (for current user) or `/usr/share/applications` (for making it available system-wide).
+Also copy the default config file provided (which enables script to work on more varied theme names) to `~/.config/dark-toggle/config`.
+
+	mkdir -p ~/.config/dark-toggle/config
+	cp config ~/.config/dark-toggle/config
+	
+Additionally, a `desktop` entry is provided for use with app launchers. In that case, after copying the `dark-toggle` script, copy the `dark-toggle.desktop` file under `~/.local/share/applications` (for current user) or `/usr/share/applications` (for making it available system-wide).
 
 ## Usage
 
 Just run `dark-toggle` or use an app launcher to search and run `Dark Toggle`. See screenshot above.
 
-The script _just works_ for themes whose names use the simple `-light` and `-dark` suffixes. The following themes are examples of such theme names and are guartanteed to work:
+The script _just works_ for themes whose names use the simple `-light` and `-dark` suffixes. The following themes are examples of such theme names and are guaranteed to work:
 
 	Arc ↔ Arc-Dark
 	Adwaita ↔ Adwaita-dark
 	Zorin*-Light ↔ Zorin*-Dark
 	
-For themes with more varied names (like `Qogir-win`, `Plata-Noir`, etc.), a config file can be used to add user-defined mapping between light/dark variant of themes. A default config file having some theme mappings is provided in the repo, but of course, it is not completely exhaustive. Why not add in an exotic `theme_mapping` and send a PR!
+For themes with more varied names (like `Qogir-win`, `Plata-Noir`, etc.), see Configuration.
+
+## Configuration
+
+A config file can be used to add user-defined mappings between light/dark variant of themes. For example:
+
+```sh
+# ~/.config/dark-toggle/config
+theme_mappings="Adapta: Adapta-Nokto,  Plata: Plata-Noir,  Arc-Darker:Arc-Dark"
+```
+
+This is useful when a theme might have more than two variants and the user would like to specify which of the two variants they would like to use.
+
+This config file will also be updated as part of the repo to allow toggling between theme names that are a little exotic (i.e. that don't follow the convention of suffixing theme names with `-dark`/`-light`). So if your favorite theme is not working with `dark-toggle`, please update the repo's config file and send in a PR! It's much appreciated!
 
 ## Credits
 
