@@ -17,19 +17,19 @@ variant_found=
 warnings=
 
 get_current_theme () {
-    gsettings get org.gnome.desktop.interface gtk-theme | tr --delete \'
+	gsettings get org.gnome.desktop.interface gtk-theme | tr --delete \'
 }
 
 set_theme () {
-    gsettings set org.gnome.desktop.interface gtk-theme "$1"
-    # Unfortunately, gsettings always reports exit status 0
+	gsettings set org.gnome.desktop.interface gtk-theme "$1"
+	# Unfortunately, gsettings always reports exit status 0
 }
 
 strstr () {
-    # Check if $2 is strstr of $1
-    # https://www.shellscript.sh/tips/strstr/
-    [ "${1#*$2*}" = "$1" ] && return 1
-    return 0
+	# Check if $2 is strstr of $1
+	# https://www.shellscript.sh/tips/strstr/
+	[ "${1#*$2*}" = "$1" ] && return 1
+	return 0
 }
 
 # Display a formatted message, then exit with error
@@ -39,10 +39,10 @@ die () {
 }
 
 print_warnings () {
-    IFS=:
-    printf "%s: errors while parsing the config file.\n" "${SCIPTNAME}" >&2
-    printf "  - %s\n" $* >&2
-    unset IFS
+	IFS=:
+	printf "%s: errors while parsing the config file.\n" "${SCRIPTNAME}" >&2
+	printf " - %s\n" $* >&2
+	unset IFS
 }
 
 ## Sanity checks
@@ -60,188 +60,192 @@ deps_check () {
 }
 
 theme_check () {
-    local user_theme="$HOME/.themes/$1"
-    local system_theme="/usr/share/themes/$1"
-    [ -f "$user_theme/gtk-3.0/gtk.css" ] || [ -f "$system_theme/gtk-3.0/gtk.css" ]
+	local user_theme="$HOME/.themes/$1"
+	local system_theme="/usr/share/themes/$1"
+	[ -f "$user_theme/gtk-3.0/gtk.css" ] || [ -f "$system_theme/gtk-3.0/gtk.css" ]
 }
 
-# Config file sanity checks
-config_exists () {
-    local conf="$1"
-    [ -f "$conf" ]
-}
-
+## Config file sanity checks
 config_valid () {
-    # Checks whether all lines in config are sytactically valid
-    local conf="$1"
-    local conf_errors=
+	# Checks whether all lines in config are sytactically valid
+	local conf="$1"
+	local conf_errors=
 
-    while read line; do
-        # Remove white space from line before processing
-        line="$(printf "$line" | tr --delete '[[:space:]]')"
+	while read line; do
+		# Remove white space from line before processing
+		line="$(printf "$line" | tr --delete '[:space:]')"
 
-        case "$line" in
-            theme_mappings=*)
-                # Trim 'key=' part from $line
-                line="${line#*=}"
+		case "$line" in
+			theme_mappings=*)
+				# Trim 'key=' part from $line
+				line="${line#*=}"
 
-                # Now the line should be surrounded by double quotes 
-                quotes="${line:0:1}${line: -1}"
-                [ "$quotes" != '""' ] && conf_errors="${conf_errors}Missing/mismatched quotes in config.:"
+				# Check with regex if the whole line is now surrounded by double quotes, but none in between
+				local line_length="$(expr length $line)"  # Same as ${#line}
+				local regex_match_length="$(expr match "$line" '"[^"]*"')"
+				[ "$line_length" != "$regex_match_length" ] && conf_errors="${conf_errors}""Missing/mismatched/invalid quotes in config.:"
 
-                # Check if every theme has a corresponding alternative theme specified
-                { strstr "$line" '*:[,"]' || strstr "$line" '[",]:*'; } && conf_errors="${conf_errors}One or more theme pairs is missing a corresponding value.:"
-                ;;
+				# Check if every theme has a corresponding alternative theme specified
+				{ strstr "$line" '*:[,"]' || strstr "$line" '[",]:*'; } && conf_errors="${conf_errors}""One or more theme pairs is missing a corresponding value.:"
+				;;
 
-            fallback_dark_theme=*|fallback_light_theme=*)
-                continue ;;
+			fallback_dark_theme=*|fallback_light_theme=*)
+				continue ;;
 
-            *=*)
-                local invalid_key="${line%=*}"
-                conf_errors="${conf_errors}Invalid key ($invalid_key) assignment.:"
-                ;;
+			*=*)
+				local invalid_key="${line%=*}"
+				conf_errors="${conf_errors}Invalid key ($invalid_key) assignment.:"
+				;;
 
-            \#*|"") continue ;;
+			\#*|"") continue ;;
 
-            *) conf_errors="${conf_errors}Invalid indentifier exists. Only key assignments (key=...) and comments (#) are supported.:" ;;
-        esac
-    done < "$conf"
+			*) conf_errors="${conf_errors} Invalid indentifier exists. Only key assignments (key=...) and comments (#) are supported.:" ;;
+		esac
+	done < "$conf"
 
-    [ -n "$conf_errors" ] && { print_warnings "$conf_errors"; return 1; }
+	[ -n "$conf_errors" ] && { print_warnings "$conf_errors"; return 1; }
 
-    return 0
+	return 0
 }
 
 config_parsable () {
-    # Shortcut function for checking whether config file exists and is valid
-    local conf_file="$1"
-    if [ -f "$conf_file" ] && config_valid "$conf_file"; then
-        return 0
-    fi
+	# Shortcut function for checking whether config file exists and is valid
+	local conf_file="$1"
+	if [ -f "$conf_file" ] && config_valid "$conf_file"; then
+		return 0
+	fi
 
-    return 1
+	return 1
 }
 
 custom_theme_mapping_exists () {
-    # Check whether a mapping in config file exists for theme_name
-    local conf_file="$1"
-    local theme_name="$2"
-    local mapping_exists=1 # Initialized as false
+	# Check whether a mapping in config file exists for theme_name
+	local conf_file="$1"
+	local theme_name="$2"
+	local mapping_exists=1 # Initialized as false
 
-    while read line; do
-        line="$(printf "$line" | tr --delete '[[:space:]]')"
+	while read line; do
+		line="$(printf "$line" | tr --delete '[:space:]')"
 
-        case $line in
-            theme_mappings=*)
-                { strstr "$line" "$theme_name:" || strstr "$line" ":$theme_name"; } \
-                    && mapping_exists=0
-                ;;
-        esac
-    done < "$conf_file"
+		case $line in
+			theme_mappings=*)
+				{ strstr "$line" "$theme_name:" || strstr "$line" ":$theme_name"; } \
+					&& mapping_exists=0
+				;;
+		esac
+	done < "$conf_file"
 
-    return $mapping_exists
+	return $mapping_exists
 }
 
 ## Config parsing
 get_theme_from_config () {
-    local conf_file="$1"
-    local new_theme=
+	local conf_file="$1"
+	local new_theme=
+	local variant=
 
-    while read line; do
-        # line="${line//[ \"]/}"
-        line="$(printf "$line" | tr --d '[[:space:]]' | tr -d '""')"
+	while read line; do
+		# line="${line//[ \"]/}"
+		line="$(printf "$line" | tr --delete '[:space:]\"')"
 
-        case $line in
-            theme_mappings=*)
-                line="${line#theme_mappings=}"
-                IFS=,
-                for pair in $line; do
-                    IFS=: read left right <<< "$pair"
-                    [ "$left" = "$current_theme" ] && new_theme="$right" && variant_found=dark
-                    [ "$right" = "$current_theme" ] && new_theme="$left" && variant_found=light
-                done
-                unset IFS
+		case $line in
+			theme_mappings=*)
+				line="${line#theme_mappings=}"
+				IFS=,
+				for pair in $line; do
+					# IFS=: read left right <<< "$pair"
+					# IFS=: read left right < <(printf "$pair")
+					IFS=: read left right <<-EOF
+$pair
+EOF
+					[ "$left" = "$current_theme" ] && new_theme="$right" && variant=dark
+					[ "$right" = "$current_theme" ] && new_theme="$left" && variant=light
+				done
+				unset IFS
 
 				;;
-        esac
-    done < "$conf_file"
+		esac
+	done < "$conf_file"
 
-    printf "%s\n" "$new_theme"
+	printf "%s %s" "$new_theme" "$variant"
 }
 
 main () {
-    # Check if necessary and optional dependecies are there, else exit
-    deps_check
-    current_theme="$(get_current_theme)"
+	# Check if necessary and optional dependecies are there, else exit
+	deps_check
+	current_theme="$(get_current_theme)"
 
-    # Try to find the alternate variant of current theme from user config
-    if config_parsable "$USER_CONFIG" \
-        && custom_theme_mapping_exists "$USER_CONFIG" "$current_theme"; then
+	# Try to find the alternate variant of current theme from user config
+	if config_parsable "$USER_CONFIG" \
+		&& custom_theme_mapping_exists "$USER_CONFIG" "$current_theme"; then
 
-        new_theme="$(get_theme_from_config "$USER_CONFIG")"
-        variant_found="${variant_found} (custom)"
+		read new_theme variant_found <<-EOF
+			$(get_theme_from_config "$USER_CONFIG")
+		EOF
+		variant_found="${variant_found} (custom)"
 
-        if ! theme_check "$new_theme"; then
-            variant_found=
-            warnings="$warnings""The user-defined alternate variant"\
-                "of this theme is not installed.:"
-        fi
-    fi
+		if ! theme_check "$new_theme"; then
+			variant_found=
+			warnings="$warnings""The user-defined alternate variant of this theme is not installed.:"
+		fi
+	fi
 
-    # If no valid user config available, try default system config
-    if [ -z "$variant_found" ] && config_parsable "$SYS_CONFIG" \
-        && custom_theme_mapping_exists "$SYS_CONFIG" "$current_theme"; then
-            new_theme="$(get_theme_from_config "$SYS_CONFIG")"
-        
-        if ! theme_check "$new_theme"; then
-            variant_found=
-            warnings="${warnings}""The alternate variant of this theme"\
-                " is not installed on your system.:"
-        fi
-    fi
+	# If no valid user config available, try default system config
+	if [ -z "$variant_found" ] && config_parsable "$SYS_CONFIG" \
+		&& custom_theme_mapping_exists "$SYS_CONFIG" "$current_theme"; then
+			read new_theme variant_found <<-EOF
+				"$(get_theme_from_config "$USER_CONFIG")"
+			EOF
+		
+		if ! theme_check "$new_theme"; then
+			variant_found=
+			warnings="${warnings}""The alternate variant of this theme is not installed on your system.:"
+		fi
+	fi
 
-    # Check if the theme name has "dark" or "Dark" at the end of its name,
-    # then try the following in order:
-    # 1. Try removing the -[Dd]ark part
-    # 2. Replace -[Dd]ark with -Light
-    # 3. Replace -[Dd]ark with -light
-    # Try the same logic for themes having [Ll]ight in the end of their name.
-    [ -z "$variant_found" ] && case $current_theme in
-        *[dD]ark)
-            new_theme="${current_theme%-[Dd]ark}"
+	# Most themes will be guessed by the following code, since conventionally,
+	# the suffixes -light and -dark are used to differentiate betwn variants.
 
-            if ! theme_check "$new_theme"
-            then
-                new_theme="${new_theme}-Light"
-            fi
+	# If the current theme has the -dark suffix in it, replace with -light
+	# Same logic for theme having suffix -light
+	[ -z "$variant_found" ] && case $current_theme in
+		*-[dD]ark)
+			base_name="${current_theme%-[Dd]ark}"
+			new_theme="$base_name"
 
-            if ! theme_check "$new_theme"
-            then
-                new_theme="${new_theme}-light"
-            fi
-            ;;
+			if ! theme_check "$new_theme"
+			then
+				new_theme="${base_name}-Light"
+			fi
 
-        *[lL]ight)
-            # new_theme="${current_theme//[lL]ight/Dark}"
-            new_theme="${current_theme%[lL]ight}Dark"
-            theme_check "$new_theme" || new_theme="${new_theme%Dark}dark"
-            DARK=dark
-            ;;
+			if ! theme_check "$new_theme"
+			then
+				new_theme="${base_name}-light"
+			fi
+			;;
 
-        *)
-            new_theme="$current_theme"-dark
-            theme_check "$new_theme" || new_theme="$current_theme"-Dark
-            DARK=dark
-            ;;
-    esac
+		*-[lL]ight)
+			# new_theme="${current_theme//[lL]ight/Dark}"
+			new_theme="${current_theme%[lL]ight}Dark"
+			theme_check "$new_theme" || new_theme="${new_theme%Dark}dark"
+			variant_found=dark
+			;;
 
-    [ ! -z "$warnings" ] && print_warnings "$warnings"
+		*)
+			new_theme="$current_theme"-dark
+			theme_check "$new_theme" || new_theme="$current_theme"-Dark
+			variant_found=dark
+			;;
+	esac
 
-    theme_check "$new_theme" || die "The theme is not installed: ${new_theme}"
-    set_theme "$new_theme"
-    notify_msg="Theme switched to ${DARK:-light} variant."
-    notify-send -t 5000 "${SCRIPTNAME}" "$notify_msg"
+	[ -n "$warnings" ] && print_warnings "$warnings"
+
+	theme_check "$new_theme" || die "The theme is not installed: ${new_theme}"
+	set_theme "$new_theme"
+	notify_msg="Theme switched to ${variant_found:-light} variant."
+	notify-send -t 5000 "${SCRIPTNAME}" "$notify_msg"
 }
 
 main "${@}"
 
+# vim: noexpandtab
