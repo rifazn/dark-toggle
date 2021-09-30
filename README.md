@@ -30,7 +30,7 @@ Additionally, a `desktop` entry is provided for use with app launchers. In that 
 
 Just run `dark-toggle` or use an app launcher to search and run `Dark Toggle`. See screenshot above.
 
-The script _just works_ for themes whose names use the simple `-light` and `-dark` suffixes. The following themes are examples of such theme names and are guartanteed to work:
+The script _just works_ for themes whose names use the simple `-light` and `-dark` suffixes. The following themes are examples of such theme names and are guaranteed to work:
 
 	Arc ↔ Arc-Dark
 	Adwaita ↔ Adwaita-dark
@@ -49,7 +49,7 @@ theme_mappings="Adapta: Adapta-Nokto,  Plata: Plata-Noir,  Arc-Darker:Arc-Dark"
 
 This is useful when a theme might have more than two variants and the user would like to specify which of the two variants they would like to use.
 
-This config file will also be updated as part of the repo to allow toggling between theme names that are a little exotic (i.e. don't follow the convention of suffixing thme names with `-dark`/`-light`). So if your favorite theme is not working with `dark-toggle`, please update the repo's config file and send in a PR! It's much appreciated!
+This config file will also be updated as part of the repo to allow toggling between theme names that are a little exotic (i.e. that don't follow the convention of suffixing theme names with `-dark`/`-light`). So if your favorite theme is not working with `dark-toggle`, please update the repo's config file and send in a PR! It's much appreciated!
 
 ## Credits
 
