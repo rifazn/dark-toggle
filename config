@@ -1,0 +1,8 @@
+# Theme mappings
+theme_mappings="Adapta:Adapta-Nokto, Plata:Plata-Noir, Simply_Circles_Light:Simple_Circles_Dark, Arc:Arc-Dark"
+# theme_mappings="Qogir-win: Qogir-dark"
+
+# Fallback themes
+fallback_light_theme="Arc"
+fallback_dark_theme="Arc-Dark"
+
