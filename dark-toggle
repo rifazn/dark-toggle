@@ -1,17 +1,16 @@
 #!/bin/sh
 
 # A small POSIX compliant script to toggle between dark and light variant
-# of a theme for GNOME based desktops.
+# of a theme for GNOME/GTK based applications.
 
 # Copyright (C) 2021 Rifaz Nahiyan
 # This code is licensed under the MIT License.
 # View the license in its entirety at: https://opensource.org/licenses/MIT
 
-# Get the script's basename and trim the '.sh' (if any) at the end
 SCRIPTNAME="${0##*/}"
 SCRIPTNAME="${SCRIPTNAME%.sh}"
-USER_CONFIG="$HOME/.config/dark-toggle/config"
 SYS_CONFIG="/etc/dark-toggle/config"
+USER_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/dark-toggle/config"
 
 variant_found=
 warnings=
@@ -25,15 +24,8 @@ set_theme () {
 	# Unfortunately, gsettings always reports exit status 0
 }
 
-strstr () {
-	# Check if $2 is strstr of $1
-	# https://www.shellscript.sh/tips/strstr/
-	[ "${1#*$2*}" = "$1" ] && return 1
-	return 0
-}
-
-# Display a formatted message, then exit with error
 die () {
+	# Display a formatted message, then exit with error
 	printf "%s: %s\n" "${0##*/}" "${*}" >&2
 	exit 1
 }
@@ -45,10 +37,10 @@ print_warnings () {
 	unset IFS
 }
 
-## Sanity checks
 deps_check () {
-	deps="gsettings notify-send"
-	missing=""
+	# Check dependencies. Currently, all deps are considered required.
+	local deps="gsettings notify-send sed tr"
+	local missing=""
 	for dep in ${deps}; do
 		command -v "${dep}" >/dev/null || missing="${missing} ${dep}"
 	done
@@ -56,7 +48,6 @@ deps_check () {
 	then
 		die "Missing necessary dependencies: ${missing}"
 	fi
-	unset missing
 }
 
 theme_check () {
@@ -65,109 +56,18 @@ theme_check () {
 	[ -f "$user_theme/gtk-3.0/gtk.css" ] || [ -f "$system_theme/gtk-3.0/gtk.css" ]
 }
 
-## Config file sanity checks
-config_valid () {
-	# Checks whether all lines in config are sytactically valid
-	local conf="$1"
-	local conf_errors=
+parse_config () {
+	local config="$1"
+	local current_theme="$2"
 
-	while read line; do
-		# Remove white space from line before processing
-		line="$(printf "$line" | tr --delete '[:space:]')"
+	while read left right __; do
+		[ "$left" = "$current_theme" ] && alt_theme="$right" && variant="dark"
+		[ "$right" = "$current_theme" ] && alt_theme="$left" && variant="light"
+	done <<-EOF
+		$(sed 's/#.*//' "$config" | tr --squeeze-repeats '[:blank:]')
+	EOF
 
-		case "$line" in
-			theme_mappings=*)
-				# Trim 'key=' part from $line
-				line="${line#*=}"
-
-				# Check with regex if the whole line is now surrounded by double quotes, but none in between
-				local line_length="$(expr length $line)"  # Same as ${#line}
-				local regex_match_length="$(expr match "$line" '"[^"]*"')"
-				[ "$line_length" != "$regex_match_length" ] && conf_errors="${conf_errors}""Missing/mismatched/invalid quotes in config.:"
-
-				# Check if every theme has a corresponding alternative theme specified
-				{ strstr "$line" '*:[,"]' || strstr "$line" '[",]:*'; } && conf_errors="${conf_errors}""One or more theme pairs is missing a corresponding value.:"
-				;;
-
-			fallback_dark_theme=*|fallback_light_theme=*)
-				continue ;;
-
-			*=*)
-				local invalid_key="${line%=*}"
-				conf_errors="${conf_errors}Invalid key ($invalid_key) assignment.:"
-				;;
-
-			\#*|"") continue ;;
-
-			*) conf_errors="${conf_errors} Invalid indentifier exists. Only key assignments (key=...) and comments (#) are supported.:" ;;
-		esac
-	done < "$conf"
-
-	[ -n "$conf_errors" ] && { print_warnings "$conf_errors"; return 1; }
-
-	return 0
-}
-
-config_parsable () {
-	# Shortcut function for checking whether config file exists and is valid
-	local conf_file="$1"
-	if [ -f "$conf_file" ] && config_valid "$conf_file"; then
-		return 0
-	fi
-
-	return 1
-}
-
-custom_theme_mapping_exists () {
-	# Check whether a mapping in config file exists for theme_name
-	local conf_file="$1"
-	local theme_name="$2"
-	local mapping_exists=1 # Initialized as false
-
-	while read line; do
-		line="$(printf "$line" | tr --delete '[:space:]')"
-
-		case $line in
-			theme_mappings=*)
-				{ strstr "$line" "$theme_name:" || strstr "$line" ":$theme_name"; } \
-					&& mapping_exists=0
-				;;
-		esac
-	done < "$conf_file"
-
-	return $mapping_exists
-}
-
-## Config parsing
-get_theme_from_config () {
-	local conf_file="$1"
-	local new_theme=
-	local variant=
-
-	while read line; do
-		# line="${line//[ \"]/}"
-		line="$(printf "$line" | tr --delete '[:space:]\"')"
-
-		case $line in
-			theme_mappings=*)
-				line="${line#theme_mappings=}"
-				IFS=,
-				for pair in $line; do
-					# IFS=: read left right <<< "$pair"
-					# IFS=: read left right < <(printf "$pair")
-					IFS=: read left right <<-EOF
-$pair
-EOF
-					[ "$left" = "$current_theme" ] && new_theme="$right" && variant=dark
-					[ "$right" = "$current_theme" ] && new_theme="$left" && variant=light
-				done
-				unset IFS
-
-				;;
-		esac
-	done < "$conf_file"
-
-	printf "%s %s" "$new_theme" "$variant"
+	printf "$alt_theme $variant"
 }
 
 main () {
@@ -175,34 +75,36 @@ main () {
 	deps_check
 	current_theme="$(get_current_theme)"
 
-	# Try to find the alternate variant of current theme from user config
-	if config_parsable "$USER_CONFIG" \
-		&& custom_theme_mapping_exists "$USER_CONFIG" "$current_theme"; then
-
-		read new_theme variant_found <<-EOF
-			$(get_theme_from_config "$USER_CONFIG")
+	# First, try to find the alternate variant of current theme from user config
+	if [ -f "$USER_CONFIG" ]; then
+		read new_theme icon_theme variant <<-EOF
+			$(parse_config $USER_CONFIG $current_theme)
 		EOF
-		variant_found="${variant_found} (custom)"
+
+		variant_found="$variant (custom)"
 
 		if ! theme_check "$new_theme"; then
 			variant_found=
-			warnings="$warnings""The user-defined alternate variant of this theme is not installed.:"
+			warning="The user-defined variant of the current theme is not installed in the system."
+			warnings="$warnings""$warning:"
 		fi
 	fi
 
-	# If no valid user config available, try default system config
-	if [ -z "$variant_found" ] && config_parsable "$SYS_CONFIG" \
-		&& custom_theme_mapping_exists "$SYS_CONFIG" "$current_theme"; then
-			read new_theme variant_found <<-EOF
-				"$(get_theme_from_config "$USER_CONFIG")"
-			EOF
-		
+	# If alternate theme not found in user config, try system config
+	if [ -z "$variant_found" ] && [ -f "$SYS_CONFIG" ]; then
+		read new_theme icon_theme variant <<-EOF
+			$(parse_config $SYS_CONFIG $current_theme)
+		EOF
+
 		if ! theme_check "$new_theme"; then
 			variant_found=
-			warnings="${warnings}""The alternate variant of this theme is not installed on your system.:"
+			warning="The alternate variant of the current theme is not installed in the system."
+			warnings="$warnings""$warning:"
 		fi
 	fi
 
+	# Config file is used for theme names that are not predictable, and for 
+	# letting the user have custom light/dark theme combos.
 	# Most themes will be guessed by the following code, since conventionally,
 	# the suffixes -light and -dark are used to differentiate betwn variants.
 
