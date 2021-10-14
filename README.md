@@ -1,12 +1,12 @@
 # dark-toggle
 
-A POSIX compliant shell script that uses `gsettings` to toggle between the dark and light variants of a GTK theme.
+A POSIX compliant shell script that uses `gsettings` to toggle between the dark and light variants of a GTK application theme.
 
 <p align="center"><img src="https://i.ibb.co/ng2s9kd/test.gif" alt="A gif showing dark-toggle"></p>
 
-This is a simple script that _just_ toggles your gtk theme. Adding features like automating at day/night cycles is not intended. However, it _can_ be used to automate theme toggling by using it as a `cronjob` or as a hook for tools like `gammastep`, or `redshift`. Check out the `contribs` directory (currently non-existant) for some examples. This simplicity, hopefully, will be more appreciated to those who use a Window Manager (as opposed to running a full DE). But DE users are of course, welcomed, nonetheless. As an extra note, Gnome Shell users can consider looking into the extension [Night Theme Switcher](https://extensions.gnome.org/extension/2236/night-theme-switcher/) which supports automatic day/night toggling out of the box.
+This is a simple script that _just_ toggles between the current gtk theme variants. Adding features like automating at day/night cycles is not intended. However, it _can_ be used to automate theme toggling by using it as a `cronjob` or as a hook for tools like `gammastep`, or `redshift`. Check out the `contribs` directory (currently non-existant) for some examples. This simplicity, hopefully, will be more appreciated to those who use a Window Manager (as opposed to running a full DE). But DE users are of course, welcomed, nonetheless. As an extra note, Gnome Shell users can consider looking into the extension [Night Theme Switcher](https://extensions.gnome.org/extension/2236/night-theme-switcher/) which supports automatic day/night toggling out of the box.
 
-The preview image is using the excellent [Dark Reader]() add-on for Firefox to make websites that don't implement _"prefers-color-scheme"_ to change their modes. Make sure to have Firefox's theme set to _"System Default"_.
+The preview image is using the excellent [Dark Reader]() add-on for Firefox to make websites that don't implement _"prefers-color-scheme"_ to change their theme modes. Make sure to have Firefox's theme set to _"System Default"_.
 
 ## Dependencies
 
@@ -44,10 +44,12 @@ A config file can be used to add user-defined mappings between light/dark varian
 
 ```sh
 # ~/.config/dark-toggle/config
-theme_mappings="Adapta: Adapta-Nokto,  Plata: Plata-Noir,  Arc-Darker:Arc-Dark"
+Plata		Plata-Noir
+Adapta		Adapta-Nokto
+Arc-Darker	Arc-Dark
 ```
 
-This is useful when a theme might have more than two variants and the user would like to specify which of the two variants they would like to use.
+This is also useful when a theme might have more than two variants and the user would like to specify which of the two variants they would like to use.
 
 This config file will also be updated as part of the repo to allow toggling between theme names that are a little exotic (i.e. that don't follow the convention of suffixing theme names with `-dark`/`-light`). So if your favorite theme is not working with `dark-toggle`, please update the repo's config file and send in a PR! It's much appreciated!
 

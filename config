@@ -1,8 +1,9 @@
-# Theme mappings
-theme_mappings="Adapta:Adapta-Nokto, Plata:Plata-Noir, Simply_Circles_Light:Simple_Circles_Dark, Arc:Arc-Dark"
-# theme_mappings="Qogir-win: Qogir-dark"
+# Config file for dark-toggle.
+# By default, this file has mappings for light/dark variants that cannot be guessed.
+# But the user can have any light/dark theme combo.
 
-# Fallback themes
-fallback_light_theme="Arc"
-fallback_dark_theme="Arc-Dark"
+# Light		Dark
+Adapta		Adapta-Nokto
+Plata		Plata-Noir
+Qogir-win	Qogir-dark
 
