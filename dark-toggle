@@ -15,6 +15,8 @@ USER_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/dark-toggle/config"
 variant_found=
 warnings=
 
+# Theming functions
+
 get_current_theme () {
 	gsettings get org.gnome.desktop.interface gtk-theme | tr --delete \'
 }
@@ -23,6 +25,8 @@ set_theme () {
 	gsettings set org.gnome.desktop.interface gtk-theme "$1"
 	# Unfortunately, gsettings always reports exit status 0
 }
+
+# Sanity checks
 
 die () {
 	# Display a formatted message, then exit with error
@@ -56,6 +60,8 @@ theme_check () {
 	[ -f "$user_theme/gtk-3.0/gtk.css" ] || [ -f "$system_theme/gtk-3.0/gtk.css" ]
 }
 
+# Configuration
+
 parse_config () {
 	local config="$1"
 	local current_theme="$2"
@@ -77,10 +83,9 @@ main () {
 
 	# First, try to find the alternate variant of current theme from user config
 	if [ -f "$USER_CONFIG" ]; then
-		read new_theme icon_theme variant <<-EOF
+		read new_theme variant <<-EOF
 			$(parse_config $USER_CONFIG $current_theme)
 		EOF
-
 		variant_found="$variant (custom)"
 
 		if ! theme_check "$new_theme"; then
@@ -92,9 +97,10 @@ main () {
 
 	# If alternate theme not found in user config, try system config
 	if [ -z "$variant_found" ] && [ -f "$SYS_CONFIG" ]; then
-		read new_theme icon_theme variant <<-EOF
+		read new_theme variant <<-EOF
 			$(parse_config $SYS_CONFIG $current_theme)
 		EOF
+		variant_found="$variant"
 
 		if ! theme_check "$new_theme"; then
 			variant_found=
