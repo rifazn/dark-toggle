@@ -2,8 +2,28 @@
 # By default, this file has mappings for light/dark variants that cannot be guessed.
 # But the user can have any light/dark theme combo.
 
-# Light		Dark
-Adapta		Adapta-Nokto
-Plata		Plata-Noir
-Qogir-win	Qogir-dark
+## Options
+#
+# Guess the icon name from the gtk theme name and change to it
+change-icons
 
+# Change the GNOME Shell theme as well the the GTK app theme
+change-shell
+
+# Don't run hooks found in hooks dir
+nohooks
+
+# Use a fallback if an alternate variable cannot be guessed.
+fallbacks {
+	# Light		Dark
+	Adwaita		Adwaita-dark
+}
+
+# Put user-defined mappings and also mappings for theme names that cannot be guessed.
+mappings {
+	# Light		Dark
+	Adapta		Adapta-Nokto
+	Plata		Plata-Noir
+	Qogir-win	Qogir-dark
+	Plata-Lumine Plata-Noir
+}

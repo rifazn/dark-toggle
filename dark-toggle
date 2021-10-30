@@ -7,15 +7,22 @@
 # This code is licensed under the MIT License.
 # View the license in its entirety at: https://opensource.org/licenses/MIT
 
+# Constants
 SCRIPTNAME="${0##*/}"
 SCRIPTNAME="${SCRIPTNAME%.sh}"
 SYS_CONFIG="/etc/dark-toggle/config"
 USER_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/dark-toggle/config"
 
+# Options from CLI or config
+change_icons=false
+change_shell=false
+exec_hooks=false
+
+# Globals
 variant_found=
 warnings=
 
-# Theming functions
+# Theme functions
 
 get_current_theme () {
 	gsettings get org.gnome.desktop.interface gtk-theme | tr --delete \'
@@ -27,7 +34,6 @@ set_theme () {
 }
 
 # Sanity checks
-
 die () {
 	# Display a formatted message, then exit with error
 	printf "%s: %s\n" "${0##*/}" "${*}" >&2
@@ -62,18 +68,47 @@ theme_check () {
 
 # Configuration
 
+parse_conf_tokens () {
+	local alt_theme= variant=
+	local shift_by=1
+	while [ $# -gt 0 ]
+	do
+		case $1 in
+			# Options
+			change-icons) change_icons=true ;;
+			change-shell) change_shell=true ;;
+			exec-hooks) exec_hooks=true ;;
+
+			# Mappings
+			mappings) [ $2 = '{' ] && shift_by=2 && shift 2 ;;
+			'}') shift_by=1 ;;
+		esac
+
+		# Parse mappings
+		if [ $shift_by -eq 2 ]
+		then
+			pair="$1 $2"
+			read left right <<-EOF
+				$pair
+			EOF
+			[ "$left" = "$current_theme" ] && alt_theme="$right" && variant="dark"
+			[ "$right" = "$current_theme" ] && alt_theme="$left" && variant="light"
+		fi
+			
+		shift $shift_by
+	done
+
+	[ -n "$alt_theme" ] && printf "$alt_theme $variant"
+}
+
 parse_config () {
-	local config="$1"
-	local current_theme="$2"
+	local config_file="$1"
+	local tokens="$(sed 's/#.*//' "$config_file" | tr '[[:space:]]' ' ')"
 
-	while read left right __; do
-		[ "$left" = "$current_theme" ] && alt_theme="$right" && variant="dark"
-		[ "$right" = "$current_theme" ] && alt_theme="$left" && variant="light"
-	done <<-EOF
-		$(sed 's/#.*//' "$config" | tr --squeeze-repeats '[:blank:]')
-	EOF
+	# Space seperated line having alternate theme and it's variant
+	theme_and_variant="$(parse_conf_tokens $tokens)"
 
-	printf "$alt_theme $variant"
+	printf "$theme_and_variant"
 }
 
 main () {
@@ -81,31 +116,42 @@ main () {
 	deps_check
 	current_theme="$(get_current_theme)"
 
-	# First, try to find the alternate variant of current theme from user config
+	# Parse the config files
+	if [ -f "$SYS_CONFIG" ]; then
+		sys_parsed="$(parse_config "$SYS_CONFIG")"
+	fi
+
 	if [ -f "$USER_CONFIG" ]; then
+		usr_parsed="$(parse_config "$USER_CONFIG")"
+	fi
+
+	# First, try to find the alternate variant of current theme from user config
+	if [ -n "$usr_parsed" ]; then
 		read new_theme variant <<-EOF
-			$(parse_config $USER_CONFIG $current_theme)
+			$usr_parsed
 		EOF
-		variant_found="$variant (custom)"
 
 		if ! theme_check "$new_theme"; then
 			variant_found=
 			warning="The user-defined variant of the current theme is not installed in the system."
 			warnings="$warnings""$warning:"
+		else
+			variant_found="$variant (custom)"
 		fi
 	fi
 
 	# If alternate theme not found in user config, try system config
-	if [ -z "$variant_found" ] && [ -f "$SYS_CONFIG" ]; then
+	if [ -z "$variant_found" ] && [ -n "$sys_parsed" ]; then
 		read new_theme variant <<-EOF
-			$(parse_config $SYS_CONFIG $current_theme)
+			$sys_parsed
 		EOF
-		variant_found="$variant"
 
 		if ! theme_check "$new_theme"; then
 			variant_found=
 			warning="The alternate variant of the current theme is not installed in the system."
 			warnings="$warnings""$warning:"
+		else
+			variant_found="$variant"
 		fi
 	fi
 
