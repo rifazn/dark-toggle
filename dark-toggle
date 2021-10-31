@@ -85,14 +85,9 @@ parse_conf_tokens () {
 		esac
 
 		# Parse mappings
-		if [ $shift_by -eq 2 ]
-		then
-			pair="$1 $2"
-			read left right <<-EOF
-				$pair
-			EOF
-			[ "$left" = "$current_theme" ] && alt_theme="$right" && variant="dark"
-			[ "$right" = "$current_theme" ] && alt_theme="$left" && variant="light"
+		if [ $shift_by -eq 2 ]; then
+			[ "$1" = "$current_theme" ] && alt_theme="$2" && variant="dark"
+			[ "$2" = "$current_theme" ] && alt_theme="$1" && variant="light"
 		fi
 			
 		shift $shift_by
@@ -163,6 +158,38 @@ main () {
 	# If the current theme has the -dark suffix in it, replace with -light
 	# Same logic for theme having suffix -light
 	[ -z "$variant_found" ] && case $current_theme in
+		*[dD]ark-[cC]ompact)
+			base_name="${current_theme%?[Dd]ark*}"
+
+			# Get the [cC]ompact part so we don't have to guess if its upper or lower case
+			_uncompacted="${current_theme%?[cC]ompact*}"
+			_compact="${current_theme#$_uncompacted}"
+
+			for lightcase in '' light Light; do
+				new_theme="$base_name$lightcase$_compact"
+				if theme_check "$new_theme"; then
+					break;
+				fi
+			done
+			;;
+
+		*[cC]ompact)
+			base_name="${current_theme%[cC]ompact*}"
+			base_name="${base_name%?[lL]ight*}"
+
+			# Get the [cC]ompact part so we don't have to guess if its upper or lower case
+			_uncompacted="${current_theme%?[cC]ompact*}"
+			_compact="${current_theme#$_uncompacted}"
+
+			for darkcase in dark Dark; do
+				new_theme="$base_name$darkcase$_compact"
+				if theme_check "$new_theme"; then
+					break;
+				fi
+			done
+			variant_found=dark
+			;;
+
 		*-[dD]ark)
 			base_name="${current_theme%-[Dd]ark}"
 			new_theme="$base_name"
