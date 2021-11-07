@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Aim of this script is to override the system's `gsettings` program.
+# To be used only for testing `dark-toggle`.
+
+# Is a very temporary hacky solution to be used until `dark-toggle` supports CLI options
+
+TMPFILE="/tmp/dark-toggle-test"
+[ $1 = "get" ] && cat "$TMPFILE"
+[ $1 = "set" ] && printf "$4"
+

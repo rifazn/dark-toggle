@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# A very rudimentary test script for `dark-toggle` that is to be used until
+# `dark-toggle` supports `--dry-run` or similar cli option
+# All themes from $maps MUST be installed for the test to pass.
+
+export PATH=".:$PATH"
+
+TMPFILE="/tmp/dark-toggle-test"
+maps="Adwaita	Adwaita-dark
+Arc	Arc-Dark
+Materia	Materia-dark
+Materia-compact	Materia-dark-compact
+Plata	Plata-Noir
+ZorinBlue-Dark	ZorinBlue-Light
+ZorinRed-Dark	ZorinRed-Light"
+
+ret=0
+mismatch=0
+while read left right; do
+	printf "$left" > "$TMPFILE"
+	_right="$(dash dark-toggle3)"
+
+	printf "$right" > /tmp/dark-toggle-test
+	_left="$(dash dark-toggle3)"
+
+	if [ "$right" != "$_right" ]; then
+		mismatch=$((mismatch+1))
+		ret=1
+		printf "L: $left changes to $_left (but should be $right)\n"
+	fi
+
+	if [ "$left" != "$_left" ]; then
+		mismatch=$((mismatch+1))
+		ret=1
+		printf "R: $right changes to $_right (but should be $left)\n"
+	fi
+done <<-EOF
+	$maps
+EOF
+
+[ $mismatch -gt 0 ] && printf "Mismatch count: $mismatch\n" && ret=1
+rm "$TMPFILE"
+exit "$ret"
