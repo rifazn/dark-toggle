@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# A small POSIX compliant script to toggle between dark and light variant
+# A simple POSIX compliant script to toggle between dark and light variant
 # of a theme for GNOME/GTK based applications.
 
 # Copyright (C) 2021 Rifaz Nahiyan
@@ -12,6 +12,7 @@ SCRIPTNAME="${0##*/}"
 SCRIPTNAME="${SCRIPTNAME%.sh}"
 SYS_CONFIG="/etc/dark-toggle/config"
 USER_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/dark-toggle/config"
+CURRENT_THEME=
 
 # Options from CLI or config
 change_icons=false
@@ -19,10 +20,10 @@ change_shell=false
 exec_hooks=false
 
 # Globals
-variant_found=
+new_theme=
 warnings=
 
-# Theme functions
+# Helper functions
 
 get_current_theme () {
 	gsettings get org.gnome.desktop.interface gtk-theme | tr --delete \'
@@ -31,6 +32,25 @@ get_current_theme () {
 set_theme () {
 	gsettings set org.gnome.desktop.interface gtk-theme "$1"
 	# Unfortunately, gsettings always reports exit status 0
+}
+
+set_shell_theme () {
+	local theme_name="$1"
+	local schema="org.gnome.shell.extensions.user-theme"
+	local ext_name="user-theme@gnome-shell-extensions.gcampax.github.com"
+	local schema_dir="$HOME/.local/share/gnome-shell/extensions/$ext_name/schemas"
+
+	# Get current shell theme name
+	local current_shell_theme="$(gsettings get "$schema" name 2>/dev/null \
+		|| gsettings --schemadir "$schema_dir" get "$schema" name 2>/dev/null)"
+
+	# Don't bother changing the theme if already in the same theme
+	if [ "$current_shell_theme" = "$theme_name" ]; then
+		return 0
+	else
+		gsettings set "$schema" name "$theme_name" 2>/dev/null \
+			|| gsettings --schemadir "$schema_dir" set "$schema" name "$theme_name" 2>/dev/null
+	fi
 }
 
 # Sanity checks
@@ -42,7 +62,7 @@ die () {
 
 print_warnings () {
 	IFS=:
-	printf "%s: errors while parsing the config file.\n" "${SCRIPTNAME}" >&2
+	printf "%s: errors while running the script.\n" "${SCRIPTNAME}" >&2
 	printf " - %s\n" $* >&2
 	unset IFS
 }
@@ -61,15 +81,17 @@ deps_check () {
 }
 
 theme_check () {
+	# Does the theme exist (installed) in the system?
 	local user_theme="$HOME/.themes/$1"
 	local system_theme="/usr/share/themes/$1"
 	[ -f "$user_theme/gtk-3.0/gtk.css" ] || [ -f "$system_theme/gtk-3.0/gtk.css" ]
 }
 
-# Configuration
+# Configuration Parsers
 
-parse_conf_tokens () {
-	local alt_theme= variant=
+parse_options () {
+	# Takes a tokenized form of a config file's contents to parse the config
+	# Returns alternate theme found from "mappings" section of config file
 	local shift_by=1
 	while [ $# -gt 0 ]
 	do
@@ -84,149 +106,231 @@ parse_conf_tokens () {
 			'}') shift_by=1 ;;
 		esac
 
-		# Parse mappings
+		# Add to $mappings to parse later on
 		if [ $shift_by -eq 2 ]; then
-			[ "$1" = "$current_theme" ] && alt_theme="$2" && variant="dark"
-			[ "$2" = "$current_theme" ] && alt_theme="$1" && variant="light"
+			mappings="$mappings""$1 $2 "
 		fi
 			
 		shift $shift_by
 	done
+}
 
+parse_maps () {
+	# Accepts the $mappings variable from parse_config()
+	# Returns name of the alt theme and variant if a mapping exists
+	local alt_theme= variant=
+	while [ $# -gt 0 ]; do
+		[ "$1" = "$CURRENT_THEME" ] && alt_theme="$2" && variant="dark"
+		[ "$2" = "$CURRENT_THEME" ] && alt_theme="$1" && variant="light"
+
+		shift 2
+	done
 	[ -n "$alt_theme" ] && printf "$alt_theme $variant"
 }
 
-parse_config () {
-	local config_file="$1"
-	local tokens="$(sed 's/#.*//' "$config_file" | tr '[[:space:]]' ' ')"
+# Main meat of the script
 
-	# Space seperated line having alternate theme and it's variant
-	theme_and_variant="$(parse_conf_tokens $tokens)"
+guess_theme_name () {
+	# Guess the alternate variant of the current theme based on generalized
+	# theme naming conventions (i.e. by adding/removing dark/light suffix)
+	case $CURRENT_THEME in
+	*[dD]ark|*[dD]ark-[cC]ompact)
+		# Example: from Arc-Dark to Arc
+		base_name="${CURRENT_THEME%?[Dd]ark*}"
 
-	printf "$theme_and_variant"
+		# Get the [cC]ompact part so we don't have to guess if its upper or lower case
+		_uncompacted="${CURRENT_THEME%?[cC]ompact*}"
+		_compact="${CURRENT_THEME#$_uncompacted}"
+
+		for lightcase in '' light -light Light -Light; do
+			theme="$base_name$lightcase$_compact"
+			if theme_check "$theme"; then
+				new_theme="$theme"
+				variant_found=light
+				break;
+			fi
+		done
+		;;
+
+	*)
+		# Example: From Materia-light-compact to Materia
+		base_name="${CURRENT_THEME%[cC]ompact*}"
+		base_name="${base_name%?[lL]ight*}"
+
+		# Get the [cC]ompact part so we don't have to guess if its upper or lower case
+		_uncompacted="${CURRENT_THEME%?[cC]ompact*}"
+		_compact="${CURRENT_THEME#$_uncompacted}"
+
+		for darkcase in dark -dark Dark -Dark; do
+			theme="$base_name$darkcase$_compact"
+			if theme_check "$theme"; then
+				new_theme="$theme"
+				variant_found=dark
+				break;
+			fi
+		done
+		;;
+	esac
+
+	[ -n "$new_theme" ] && printf "$new_theme $variant_found"
+}
+
+change_icon_theme () {
+	# change to the icon theme that matches with the gtk_theme name the most
+	local gtk_theme="$1"
+	local longest_match=0
+	local icon_name=
+
+	local usr_icons_dir="$HOME/.icons"
+	local sys_icons_dir="/usr/share/icons"
+    
+	for icon_dir in $sys_icons_dir/* $usr_icons_dir/*; do
+        # icon file exists?
+        [ ! -f $icon_dir/index.theme ] && continue
+
+        icon=${icon_dir##*/}
+        # expr ensures that match is at least $gtk_theme's length
+		match_len="$(expr $gtk_theme : $icon)"
+        [ $match_len -gt $longest_match ] && longest_match=$match_len && icon_name=$icon
+	done
+
+    [ -n "$icon_name" ] && gsettings set org.gnome.desktop.interface icon-theme "$icon_name"
+}
+
+change_shell_theme () {
+	# Change to the shell theme whose name matches the most with $gtk_theme
+	local gtk_theme="$1"
+	local default_shell_theme_path="/usr/share/gnome-shell/theme"
+
+	local longest_match=0 theme_chosen=
+	local extension_enabled=
+
+	#
+	# Some sanity checks
+	#
+	for cmd in "gsettings get org.gnome.shell enabled-extensions" "gnome-extensions list --enabled"
+	do
+		command -v "${cmd%% *}" >/dev/null || continue
+		case $($cmd) in
+			*user-theme@gnome-shell-extensions.gcampax.github.com*) extension_enabled=true ;;
+			*) : ;;
+		esac
+	done
+
+	if [ "$extension_enabled" != "true" ]; then
+		warnings="$warnings"'GNOME shell theme not changed as the extension "GNOME User Themes" is not enabled.'
+		return 1
+	fi
+
+
+	#
+	# Finding and setting the default Gnome Shell Theme (gst)
+	#
+
+	# Here we're presented with a special case.
+	# First, you change to the "Default" shell theme by passing an empty '' to gsettings
+	# Second, the default shell theme is not always "Adwaita", as distros can change that.
+	# So first, we try to find _what_ the default shell theme is. Then if $gtk_theme
+	# matches the derived default shell theme, we set the shell theme to ''
+
+	# Look for a folder in /usr/share/gnome-shell/theme
+	# If none found, Adwaita is the default gst
+	# If found, that is the default gst
+	for theme in /usr/share/gnome-shell/theme/*; do
+		# break at the first directory found
+		[ -d "$theme" ] && theme="${theme##*/}" && break
+
+		# Unset if current item is not a directory
+		unset theme
+	done
+
+	default_shell_theme="${theme:-Adwaita}"
+
+	# Special case for default shell theme
+	case $gtk_theme in "$default_shell_theme"*) set_shell_theme ''; return 0; ;; esac
+
+	# Try to make a guess what the _shell_ theme for the current _gtk_ theme should be
+	for theme in /usr/share/themes/*; do
+		[ ! -d "$theme/gnome-shell" ] && continue
+		theme="${theme##*/}"
+		local match="$(expr "$gtk_theme.*" : "$theme")"
+		[ "$match" -gt "$longest_match" ] && longest_match="$match" && theme_chosen="$theme"
+	done
+
+	[ -n "$theme_chosen" ] && set_shell_theme "$theme_chosen"
 }
 
 main () {
-	# Check if necessary and optional dependecies are there, else exit
 	deps_check
-	current_theme="$(get_current_theme)"
+	local mappings=
+	CURRENT_THEME="$(get_current_theme)"
 
-	# Parse the config files
-	if [ -f "$SYS_CONFIG" ]; then
-		sys_parsed="$(parse_config "$SYS_CONFIG")"
+	#
+	# Parsing the config file for options and theme mappings
+	#
+
+	# Tokenize the config files
+	[ -f "$USER_CONFIG" ] && user_conf_tokens="$(sed 's/#.*//' "$USER_CONFIG" | tr '[[:space:]]' ' ')"
+	[ -f "$SYS_CONFIG" ] && sys_conf_tokens="$(sed 's/#.*//' "$SYS_CONFIG" | tr '[[:space:]]' ' ')"
+
+	# Parse options from the user's tokenized config. Also, importantly, populates $mappings
+	set -f; parse_options $user_conf_tokens
+
+	# Read user defined mappings by parsing $mappings
+	read theme_usr variant_usr <<-EOF
+		$(parse_maps $mappings)
+	EOF
+	variant_usr="${variant_usr:+$variant_usr (custom)}"
+
+	# Parse options from the system's tokenized config. Also populates $mappings
+	parse_options $sys_conf_tokens; set +f
+
+	# Read system/distro/release defined mappings by parsing $mappings
+	read theme_sys variant_sys <<-EOF
+		$(parse_maps $mappings)
+	EOF
+
+	# If a mapping was found, but the theme is not installed, raise an appropriate warning
+	if [ -n "$theme_usr" ] && ! theme_check "$theme_usr"; then
+		theme_usr= variant_usr=
+		warn="The user-defined variant of the current theme is not installed in the system."
+		warnings="$warnings""$warn:"
 	fi
 
-	if [ -f "$USER_CONFIG" ]; then
-		usr_parsed="$(parse_config "$USER_CONFIG")"
+	if [ -n "$theme_sys" ] && ! theme_check "$theme_sys"; then
+		theme_sys= variant_sys=
+		warn="The alternate variant of the current theme is not installed in the system."
+		warnings="$warnings""$warn:"
 	fi
 
-	# First, try to find the alternate variant of current theme from user config
-	if [ -n "$usr_parsed" ]; then
-		read new_theme variant <<-EOF
-			$usr_parsed
+	# Prefer user defined theme over system defined. Null is also possible
+	new_theme="${theme_usr:-$theme_sys}"
+	[ -n "$new_theme" ] && variant_found="${variant_usr:-$variant_sys}"
+
+
+	#
+	# Most themes will be derived this way.
+	# If a mapping from either of the config was not found,
+	# make a guess of the alternate variant from the current theme's name
+	#
+	if [ -z "$new_theme" ]; then
+		read new_theme variant_found <<-EOF
+			$(guess_theme_name)
 		EOF
-
-		if ! theme_check "$new_theme"; then
-			variant_found=
-			warning="The user-defined variant of the current theme is not installed in the system."
-			warnings="$warnings""$warning:"
-		else
-			variant_found="$variant (custom)"
-		fi
 	fi
 
-	# If alternate theme not found in user config, try system config
-	if [ -z "$variant_found" ] && [ -n "$sys_parsed" ]; then
-		read new_theme variant <<-EOF
-			$sys_parsed
-		EOF
+	# Quit if no themes found at this stage
+	[ -z "$new_theme" ] && die "No valid alternate variant found for current theme: $CURRENT_THEME"
 
-		if ! theme_check "$new_theme"; then
-			variant_found=
-			warning="The alternate variant of the current theme is not installed in the system."
-			warnings="$warnings""$warning:"
-		else
-			variant_found="$variant"
-		fi
-	fi
+	# Set the new gtk/+shell/+icon theme and wrap up
+	set_theme "$new_theme"
 
-	# Config file is used for theme names that are not predictable, and for 
-	# letting the user have custom light/dark theme combos.
-	# Most themes will be guessed by the following code, since conventionally,
-	# the suffixes -light and -dark are used to differentiate betwn variants.
-
-	# If the current theme has the -dark suffix in it, replace with -light
-	# Same logic for theme having suffix -light
-	[ -z "$variant_found" ] && case $current_theme in
-		*[dD]ark-[cC]ompact)
-			base_name="${current_theme%?[Dd]ark*}"
-
-			# Get the [cC]ompact part so we don't have to guess if its upper or lower case
-			_uncompacted="${current_theme%?[cC]ompact*}"
-			_compact="${current_theme#$_uncompacted}"
-
-			for lightcase in '' light Light; do
-				new_theme="$base_name$lightcase$_compact"
-				if theme_check "$new_theme"; then
-					break;
-				fi
-			done
-			;;
-
-		*[cC]ompact)
-			base_name="${current_theme%[cC]ompact*}"
-			base_name="${base_name%?[lL]ight*}"
-
-			# Get the [cC]ompact part so we don't have to guess if its upper or lower case
-			_uncompacted="${current_theme%?[cC]ompact*}"
-			_compact="${current_theme#$_uncompacted}"
-
-			for darkcase in dark Dark; do
-				new_theme="$base_name$darkcase$_compact"
-				if theme_check "$new_theme"; then
-					break;
-				fi
-			done
-			variant_found=dark
-			;;
-
-		*-[dD]ark)
-			base_name="${current_theme%-[Dd]ark}"
-			new_theme="$base_name"
-
-			if ! theme_check "$new_theme"
-			then
-				new_theme="${base_name}-Light"
-			fi
-
-			if ! theme_check "$new_theme"
-			then
-				new_theme="${base_name}-light"
-			fi
-			;;
-
-		*-[lL]ight)
-			# new_theme="${current_theme//[lL]ight/Dark}"
-			new_theme="${current_theme%[lL]ight}Dark"
-			theme_check "$new_theme" || new_theme="${new_theme%Dark}dark"
-			variant_found=dark
-			;;
-
-		*)
-			new_theme="$current_theme"-dark
-			theme_check "$new_theme" || new_theme="$current_theme"-Dark
-			variant_found=dark
-			;;
-	esac
+	[ "$change_icons" = "true" ] && change_icon_theme "$new_theme"
+	[ "$change_shell" = "true" ] && change_shell_theme "$new_theme"
 
 	[ -n "$warnings" ] && print_warnings "$warnings"
-
-	theme_check "$new_theme" || die "The theme is not installed: ${new_theme}"
-	set_theme "$new_theme"
-	notify_msg="Theme switched to ${variant_found:-light} variant."
+	notify_msg="Theme switched to ${variant_found} variant."
 	notify-send -t 5000 "${SCRIPTNAME}" "$notify_msg"
 }
 
 main "${@}"
-
-# vim: noexpandtab
