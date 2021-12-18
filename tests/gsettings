@@ -6,6 +6,7 @@
 # Is a very temporary hacky solution to be used until `dark-toggle` supports CLI options
 
 TMPFILE="/tmp/dark-toggle-test"
-[ $1 = "get" ] && cat "$TMPFILE"
-[ $1 = "set" ] && printf "$4"
+[ "$1" = "get" ] && cat "$TMPFILE"
+[ "$1" = "set" ] && [ "$3" = "gtk-theme" ] && printf "$4"
+[ "$1" = "set" ] && [ "$3" = "icon-theme" ] && : # Do nothing
 

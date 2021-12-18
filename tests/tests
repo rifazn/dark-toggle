@@ -3,6 +3,7 @@
 # A very rudimentary test script for `dark-toggle` that is to be used until
 # `dark-toggle` supports `--dry-run` or similar cli option
 # All themes from $maps MUST be installed for the test to pass.
+# Also, all extra options from the config file are assumed disabled.
 
 export PATH=".:$PATH"
 
@@ -19,10 +20,10 @@ ret=0
 mismatch=0
 while read left right; do
 	printf "$left" > "$TMPFILE"
-	_right="$(dash dark-toggle3)"
+	_right="$(dash ../dark-toggle3)"
 
 	printf "$right" > /tmp/dark-toggle-test
-	_left="$(dash dark-toggle3)"
+	_left="$(dash ../dark-toggle3)"
 
 	if [ "$right" != "$_right" ]; then
 		mismatch=$((mismatch+1))
