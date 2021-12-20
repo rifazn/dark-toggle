@@ -208,6 +208,16 @@ change_shell_theme () {
 	#
 	# Some sanity checks
 	#
+
+	# Is this a GNOME based desktop?
+	case "$XDG_CURRENT_DESKTOP" in
+		*GNOME*) : ;;  # OK
+		*)
+		warnings="$warnings"'Not changing shell theme as this is not a GNOME-based desktop.'
+		return 1; ;;
+	esac
+
+	# Is the user-theme extension enabled?
 	for cmd in "gsettings get org.gnome.shell enabled-extensions" "gnome-extensions list --enabled"
 	do
 		command -v "${cmd%% *}" >/dev/null || continue
