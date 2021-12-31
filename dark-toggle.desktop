@@ -10,16 +10,16 @@ Version=1.0
 Name=Dark Toggle
 
 # A comment which can/will be used as a tooltip
-Comment=A shell script to toggle between light and dark variants of a GTK theme.
+Comment=A shell script to toggle between light and dark variants of a GTK/GNOME Shell theme.
 
 # The executable of the application, possibly with arguments.
 Exec=dark-toggle
 
 # The name of the icon that will be used to display this entry
-Icon=display-brightness-symbolic
+Icon=/home/rifazn/Code/dark-toggle/icons/day-and-night1.png
 
 # Describes the categories in which this entry should be shown
 Categories=Utility;GNOME;GTK;
 
 # Facilitates in searching for the application
-Keywords=theme;dark;light;night;day;mode;gtk;
+Keywords=theme;dark;light;night;day;mode;toggle;gtk;

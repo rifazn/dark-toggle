@@ -1,0 +1,13 @@
+day-and-night1.png: made by [PIXARTIST] sourced from [Flaticon]
+day-and-night2.png: made by [freepik] sourced from [Flaticon]
+day-and-night3.png: made by [freepik] sourced from [Flaticon]
+day-and-night4.png: made by [freepik] sourced from [Flaticon]
+day-and-night5.png: made by [DinosoftLabs] sourced from [Flaticon]
+night.png: made by [freepik] sourced from [Flaticon]
+
+
+[Flaticon]: https://www.flaticon.com
+[freepik]: https://www.freepik.com
+[PIXARTIST]: https://www.flaticon.com/authors/pixartist
+[DinosoftLabs]: https://www.flaticon.com/authors/dinosoftlabs
+
