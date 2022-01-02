@@ -1,12 +1,25 @@
-# dark-toggle
+<h1 style="border-bottom: 2px solid;">
+<img src="https://user-images.githubusercontent.com/3108565/147838578-781868ef-aa7b-413f-9327-6296b8615b56.png" alt="icon"
+	style="width:64px; margin-right: 5px;">
+dark-toggle
+</h1>
 
-A POSIX compliant shell script that uses `gsettings` to toggle between the dark and light variants of a GTK application theme.
+A shell script that toggles between the _dark_ and _light_ variants of the current GTK theme. Works for the GNOME shell theme and icon themes too. POSIX compliant.
 
-<p align="center"><img src="https://i.ibb.co/ng2s9kd/test.gif" alt="A gif showing dark-toggle"></p>
+## Demo
 
-This is a simple script that _just_ toggles between the current gtk theme variants. Adding features like automating at day/night cycles is not intended. However, it _can_ be used to automate theme toggling by using it as a `cronjob` or as a hook for tools like `gammastep`, or `redshift`. Check out the `contribs` directory (currently non-existant) for some examples. This simplicity, hopefully, will be more appreciated to those who use a Window Manager (as opposed to running a full DE). But DE users are of course, welcomed, nonetheless. As an extra note, Gnome Shell users can consider looking into the extension [Night Theme Switcher](https://extensions.gnome.org/extension/2236/night-theme-switcher/) which supports automatic day/night toggling out of the box.
+https://user-images.githubusercontent.com/3108565/147882436-618ba345-730b-4aab-84ea-295a6f22b2d8.mp4
 
-The preview image is using the excellent [Dark Reader]() add-on for Firefox to make websites that don't implement _"prefers-color-scheme"_ to change their theme modes. Make sure to have Firefox's theme set to _"System Default"_.
+For more demos of `dark-toggle` running on the default GNOME Shell and Ubuntu can be found [below](#more-demos).
+
+## Highlights
+
+- Easy and instantaneous. Toggle darkness at will!
+- Works the same for _Window Managers_ and the _Gnome Shell_ alike. No need to have any _Gnome Shell Extensions_ installed!
+- Is extendable using _hooks_ (WIP). Changing the theme of your terminal emulator will soon be possible!
+- Can easily be used as a _hook_ in other programs like [gammastep](https://gitlab.com/chinstrap/gammastep) and [redshift](https://github.com/jonls/redshift).
+- No need to wait for a day/night cycle.
+- No mouse interaction needed.
 
 ## Dependencies
 
@@ -15,11 +28,11 @@ The preview image is using the excellent [Dark Reader]() add-on for Firefox to m
 
 ## Installation
 
-Clone the repo and then copy `dark-toggle` to a directory that is in your `$PATH`. For current user this directory can be `~/.local/share/bin`, or for system wide installation, this can be `/usr/local/bin`. For example:
+Clone the repo, then copy `dark-toggle` to a directory that is in your `$PATH`. For the current user this directory can be `~/.local/share/bin`, or for system wide installation, this can be `/usr/local/bin`. For example:
 
 	cp dark-toggle ~/.local/share/bin/
 	
-Also copy the default config file provided (which enables script to work on more varied theme names) to `~/.config/dark-toggle/config`.
+Also copy the default config file provided (which also enables script to work on more _varied_ theme names) to `~/.config/dark-toggle/config`.
 
 	mkdir -p ~/.config/dark-toggle/config
 	cp config ~/.config/dark-toggle/config
@@ -28,30 +41,75 @@ Additionally, a `desktop` entry is provided for use with app launchers. In that 
 
 ## Usage
 
-Just run `dark-toggle` or use an app launcher to search and run `Dark Toggle`. See screenshot above.
-
-The script _just works_ for themes whose names use the simple `-light` and `-dark` suffixes. The following themes are examples of such theme names and are guaranteed to work:
-
-	Arc ↔ Arc-Dark
-	Adwaita ↔ Adwaita-dark
-	Zorin*-Light ↔ Zorin*-Dark
-	
-For themes with more varied names (like `Qogir-win`, `Plata-Noir`, etc.), see Configuration.
+Just run `dark-toggle` or use an app launcher to search and run `Dark Toggle`. CLI options are not added yet, but see [Configuration](#configuration).
 
 ## Configuration
 
-A config file can be used to add user-defined mappings between light/dark variant of themes. For example:
+By default, `dark-toggle` only changes the GTK Applications theme. However, further options can be added as necessary from the table below:
+
+ Option | Description
+----------------|----------------------------------
+`change-shell` | Also change the GNOME Shell theme. (GNOME Shell must be running and [User Themes extension](https://extensions.gnome.org/extension/19/user-themes/) must be installed.)
+`change-icons` | Also change the icon theme.
+`exec-hooks` | Execute a hook each time `dark-toggle` is run (not implemented yet)
+
+The config file can also be used to add user-defined mappings between light and dark variant of themes.
+
+Example of a config file:
 
 ```sh
 # ~/.config/dark-toggle/config
-Plata		Plata-Noir
-Adapta		Adapta-Nokto
-Arc-Darker	Arc-Dark
+
+## Options
+#
+# Guess the icon name from the gtk theme name and change to it
+change-icons
+
+# Also change the gnome shell theme
+change-shell
+
+# Run hooks found in hooks dir
+exec-hooks
+
+# Put user-defined mappings and also mappings for theme names that cannot be guessed.
+mappings {
+	# Light		Dark
+	Adapta		Adapta-Nokto
+	Plata		Plata-Noir
+	Qogir-win	Qogir-dark
+	Plata-Lumine	Plata-Noir
+}
 ```
 
 This is also useful when a theme might have more than two variants and the user would like to specify which of the two variants they would like to use.
 
-This config file will also be updated as part of the repo to allow toggling between theme names that are a little exotic (i.e. that don't follow the convention of suffixing theme names with `-dark`/`-light`). So if your favorite theme is not working with `dark-toggle`, please update the repo's config file and send in a PR! It's much appreciated!
+## More Demos
+
+### GNOME Shell
+
+_Adwaita theme_
+
+https://user-images.githubusercontent.com/3108565/147814344-41b6b278-8872-48fb-a7d4-4a145509270b.mp4
+
+_Plata theme_
+
+https://user-images.githubusercontent.com/3108565/147814701-390c4705-d108-45cd-8ba1-17db58ea1a37.mp4
+
+_ZorinGreen theme_
+
+https://user-images.githubusercontent.com/3108565/147814722-c3a7dfb0-5a58-4766-8949-6026d7148ef4.mp4
+
+_Ubuntu_
+
+Demoing on the themes Yaru, Adwaita and Materia:
+
+http://0x0.st/osSc.mp4
+
+## Note:
+
+The demos shown here are using the excellent [Dark Reader](https://addons.mozilla.org/en-US/firefox/addon/darkreader/) add-on for Firefox.
+
+Those looking for a Gnome Shell Extension, as opposed to this cli tool, can try the [Night Theme Switcher](https://extensions.gnome.org/extension/2236/night-theme-switcher/) extension... But have you seen this tool's [#Highlights](#highlights)?
 
 ## Credits
 
