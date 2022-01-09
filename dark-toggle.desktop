@@ -16,7 +16,7 @@ Comment=A shell script to toggle between light and dark variants of a GTK/GNOME 
 Exec=dark-toggle
 
 # The name of the icon that will be used to display this entry
-Icon=/home/rifazn/Code/dark-toggle/icons/day-and-night1.png
+Icon=dark-toggle.png
 
 # Describes the categories in which this entry should be shown
 Categories=Utility;GNOME;GTK;
