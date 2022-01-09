@@ -9,7 +9,7 @@ DESKTOPFILE = dark-toggle.desktop
 
 ALL = install install-desktop
 
-.PHONY: $(ALL) uninstall uninstall-desktop
+.PHONY: $(ALL) uninstall uninstall-desktop uninstall-all
 
 all: $(ALL)
 
@@ -22,6 +22,8 @@ install-desktop: $(DESKTOPFILE)
 	$(INSTALL) -m 0644 $(DESKTOPFILE) $(DESTDIR)$(DESKTOPPREFIX)
 	$(INSTALL) -m 0755 -d $(DESTDIR)$(DESKTOPICONPREFIX)/64x64/apps
 	$(INSTALL) -m 0644 $(ICON) $(DESTDIR)$(DESKTOPICONPREFIX)/64x64/apps/dark-toggle.png
+
+uninstall-all: uninstall uninstall-desktop
 
 uninstall-desktop:
 	$(RM) $(DESTDIR)$(DESKTOPPREFIX)/$(DESKTOPFILE)
