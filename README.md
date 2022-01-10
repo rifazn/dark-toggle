@@ -28,16 +28,15 @@ For more demos of `dark-toggle` running on the default GNOME Shell and Ubuntu ca
 
 ## Installation
 
-Clone the repo, then copy `dark-toggle` to a directory that is in your `$PATH`. For the current user this directory can be `~/.local/share/bin`, or for system wide installation, this can be `/usr/local/bin`. For example:
+Install system-wide for all users (requires root user or `sudo`):
 
-	cp dark-toggle ~/.local/share/bin/
-	
-Also copy the default config file provided (which also enables script to work on more _varied_ theme names) to `~/.config/dark-toggle/config`.
+	make
 
-	mkdir -p ~/.config/dark-toggle/config
-	cp config ~/.config/dark-toggle/config
-	
-Additionally, a `desktop` entry is provided for use with app launchers. In that case, after copying the `dark-toggle` script, copy the `dark-toggle.desktop` file under `~/.local/share/applications` (for current user) or `/usr/share/applications` (for making it available system-wide).
+Install for current user only:
+
+	make PREFIX=~/.local
+
+For current-user only, make sure `~/.local/bin` is in your `$PATH`.
 
 ## Usage
 
